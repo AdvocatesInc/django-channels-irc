@@ -128,6 +128,6 @@ class CLI(object):
         except KeyboardInterrupt:
             logging.info("Disconnecting from {}:{}...".format(
                 client.connection.server, client.connection.port
-            )
+            ))
             client.disconnect()
             sys.exit(0)
