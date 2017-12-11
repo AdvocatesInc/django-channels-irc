@@ -7,6 +7,7 @@ CHANNELS = {
     'connect': 'irc-client.connect',
     'join': 'irc-client.join',
     'receive': 'irc-client.receive',
+    'disconnect': 'irc-client.disconnect',
 }
 
 
@@ -137,6 +138,17 @@ class ChannelsIRCClient(SimpleIRCClient):
         """
         self._handle_on_message(connection, event)
 
+    def on_disconnect(self, connection, event):
+        """
+        Sends message to `irc-client.disconect` with disconnected server info
+        """
+        channel_name = CHANNELS['disconnect']
+        msg = {
+            'reply_channel': self.reply_channel,
+            'server': [connection.server, connection.port],
+        }
+        self._send_channel_msg(channel_name, msg)
+
     def _handle_on_message(self, connection, event):
         channel_name = CHANNELS['receive']
         msg = {
@@ -147,3 +159,9 @@ class ChannelsIRCClient(SimpleIRCClient):
             'body': event.arguments[0],
         }
         self._send_channel_msg(channel_name, msg)
+
+    def disconnect(self, message=""):
+        """
+        Disconnects from IRC server
+        """
+        self.connection.disconnect(message=message)

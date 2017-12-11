@@ -122,4 +122,12 @@ class CLI(object):
             username=args.username,
             ircname=args.realname
         )
-        client.start()
+
+        try:
+            client.start()
+        except KeyboardInterrupt:
+            logging.info("Disconnecting from {}:{}...".format(
+                client.connection.server, client.connection.port
+            )
+            client.disconnect()
+            sys.exit(0)
