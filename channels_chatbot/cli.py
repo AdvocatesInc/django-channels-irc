@@ -126,7 +126,7 @@ class CLI(object):
         try:
             client.start()
         except KeyboardInterrupt:
-            logging.info("Disconnecting from {}:{}...".format(
+            logger.info("Disconnecting from {}:{}...".format(
                 client.connection.server, client.connection.port
             ))
             client.disconnect()

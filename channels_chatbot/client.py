@@ -62,8 +62,8 @@ class ChannelsReactor(Reactor):
         """
         Posts a message to the passed channel from Django channels. Channel msg should be in format:
             {
+                'type': 'message',
                 'channel': <CHANNEL_NAME>,
-                'reply_channel': <REPLY_CHANNEL_NAME>,
                 'body': <MESSAGE_TEXT>,
             }
         """
