@@ -1,4 +1,4 @@
-# Channels-Chatbot
+# Channels-IRC
 
 A bridge between IRC and Django's `channels`. Built according to the [ASGI IRC spec](https://github.com/django/channels/blob/master/docs/asgi/irc-client.rst)
 
@@ -11,33 +11,53 @@ run `python setup.py install` to install the library and set up the command line
 The interface server can be started by simply running the command,
 
 ```
-channels-chatbot
+channels-irc
 ```
 
-The server requires that the `server`, `nickname`, and `channel_layer` properties be set. The `channel_layer` should be an import string pointing to the location of your app's channel_layer instance.  Hence, if your app was named `myapp`, contained an ASGI filed called `asgi.py`, and your channel_layer is named `my_channel_layer`, you could start the server by running:
+The server requires that the `server`, `nickname`, and `application` properties be set. The `application` should be an import string pointing to the location of your app's ASGI application. Hence, if your app was named `myapp`, contained an ASGI filed called `asgi.py`, and your ASGI application is named `my_application`, you could start the server by running:
 
 ```
-channels-chatbot -s 'irc.freenode.net' -n 'my_irc_nickname' -c 'myapp.asgi:my_channel_layer'
+channels-irc -s 'irc.freenode.net' -n 'my_irc_nickname' -a 'myapp.asgi:my_application'
 ```
 
-You can also set these values using the env varialbes `CHANNELS_CHATBOT_SERVER`, `CHANNELS_CHATBOT_NICKNAME`, and `CHANNELS_CHATBOT_LAYER`.
+You can also set these values using the env varialbes `CHANNELS_IRC_SERVER`, `CHANNELS_IRC_NICKNAME`, and `CHANNELS_IRC_LAYER`.
 
-## Channels
+## IRC Consumers
 
-As specified in the [ASGI IRC spec](https://github.com/django/channels/blob/master/docs/asgi/irc-client.rst), the following channels will be available in your channels-enabled Django app:
-
-```
-channel_routing = {
-    'irc-client.connect': 'path.to.connect.consumer', # receives messages when client connects to IRC server
-    'irc-client.join': 'path.to.join.consumer', # receives messages when client joins an IRC channel
-    'irc-client.receive': 'path.to.receive.consumer', # receives messages when client gets an action, message, or notification
-}
-```
-
-## Options
-
-Full options list coming soon.  For a full list of possible command line options, run
+`channels_irc` is comes with the `IrcConsumer` and the `AsyncIrcConsumer` for bootstrapping IRC connection handling.
 
 ```
-channels-chatbot --help
+from channels_irc import IrcConsumer
+
+class MyConsumer(IrcConsumer):
+    def connect(self, server, port, nickname):
+        """
+        Optional hook for actions on connection to IRC Server
+        """
+        print('Connected to server {}:{} with nickname'.format(server, port, nickname)
+
+    def disconnect(self, server, port):
+        """
+        Optionl hook fr actions on disconnect from IRC Server
+        """
+        print('Disconnect from server {}:{}'.format(server, port)
+
+    def my_custom_action(self):
+        """
+        Use built-in functions to send basic IRC commands
+        """
+        self.message('my-channel', 'here is what I wanted to say')
+```
+
+Make sure to use `irc` as the protocol in the `ProtocolTypeRouter`
+
+```
+from channels.routing import ProtocolTypeRouter
+
+from my_irc_app.consumers import MyConsumer
+
+
+application = ProtocolTypeRouter({
+    'irc': MyConsumer,
+})
 ```
