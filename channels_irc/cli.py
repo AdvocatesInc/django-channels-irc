@@ -7,7 +7,6 @@ import asyncio
 
 from .client import ChannelsIRCClient
 
-
 logger = logging.getLogger(__name__)
 
 
