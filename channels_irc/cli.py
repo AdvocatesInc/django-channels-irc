@@ -101,7 +101,7 @@ class CLI(object):
             format="%(asctime)-15s %(levelname)-8s %(message)s",
         )
 
-        if not any([args.application, args.server, args.nickname]):
+        if not all([args.application, args.server, args.nickname]):
             raise ValueError(
                 "--application, --server, and --nickname are required arguments. "
                 "Please add them via the command line or their respective env variables."
@@ -116,6 +116,7 @@ class CLI(object):
         client = ChannelsIRCClient(application)
 
         logger.info('Connecting to IRC Server {}:{}'.format(args.server, args.port))
+
         client.connect(
             args.server,
             args.port,
@@ -124,8 +125,6 @@ class CLI(object):
             username=args.username,
             ircname=args.realname
         )
-
-        logger.error("THIS IS AN ERROR LOG")
 
         try:
             client.start()
@@ -147,6 +146,6 @@ class CLI(object):
 
             while not tasks.done() and not loop.is_closed():
                 loop.run_forever()
-
+        finally:
             loop.close()
             sys.exit(0)

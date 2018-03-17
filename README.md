@@ -20,7 +20,7 @@ The server requires that the `server`, `nickname`, and `application` properties 
 channels-irc -s 'irc.freenode.net' -n 'my_irc_nickname' -a 'myapp.asgi:my_application'
 ```
 
-You can also set these values using the env varialbes `CHANNELS_IRC_SERVER`, `CHANNELS_IRC_NICKNAME`, and `CHANNELS_IRC_LAYER`.
+You can also set these values using the env variables `CHANNELS_IRC_SERVER`, `CHANNELS_IRC_NICKNAME`, and `CHANNELS_IRC_LAYER`.
 
 ## IRC Consumers
 

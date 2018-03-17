@@ -60,6 +60,8 @@ class ChannelsIRCClient(SimpleIRCClient):
         """
         Sends `irc.connect` message type
         """
+        logger.info('Connected to IRC Server {}:{}'.format(connection.server, connection.port))
+
         msg = {
             'type': 'irc.connect',
             'server': [connection.server, connection.port],
