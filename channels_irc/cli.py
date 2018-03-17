@@ -3,9 +3,9 @@ import argparse
 import logging
 import importlib
 import os
+import asyncio
 
 from .client import ChannelsIRCClient
-
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,8 @@ class CLI(object):
             '-s',
             '--server',
             dest='server',
-            help='IRC server to connect to. Can also be set from CHANNALS_CHATBOT_SERVER env variable',
-            default=os.environ.get('CHANNELS_CHATBOT_SERVER', None),
+            help='IRC server to connect to. Can also be set from CHANNALS_IRC_SERVER env variable',
+            default=os.environ.get('CHANNELS_IRC_SERVER', None),
         )
         self.parser.add_argument(
             '-p',
@@ -33,22 +33,22 @@ class CLI(object):
             type=int,
             help=(
                 'Port number of IRC server to connect to. Can also be set from '
-                'CHANNELS_CHATBOT_PORT env variable. Default is 6667'
+                'CHANNELS_IRC_PORT env variable. Default is 6667'
             ),
-            default=os.environ.get('CHANNELS_CHATBOT_PORT', 6667),
+            default=os.environ.get('CHANNELS_IRC_PORT', 6667),
         )
         self.parser.add_argument(
             '-n',
             '--nickname',
             dest='nickname',
             help='Nickname on the IRC server',
-            default=os.environ.get('CHANNELS_CHATBOT_NICKNAME', None),
+            default=os.environ.get('CHANNELS_IRC_NICKNAME', None),
         )
         self.parser.add_argument(
             '--password',
             dest='password',
             help='Password on the IRC server',
-            default=os.environ.get('CHANNELS_CHATBOT_PASSWORD', None),
+            default=os.environ.get('CHANNELS_IRC_PASSWORD', None),
         )
         self.parser.add_argument(
             '--username',
@@ -71,11 +71,11 @@ class CLI(object):
             default=1,
         )
         self.parser.add_argument(
-            '-c',
-            '--channel_layer',
-            dest='channel_layer',
-            help='The ASGI channel layer instance to use as path.to.module:instance.path',
-            default=os.environ.get('CHANNELS_CHATBOT_LAYER', None),
+            '-a',
+            '--application',
+            dest='application',
+            help='The application to dispatch to as path.to.module:instance.path',
+            default=os.environ.get('CHANNELS_IRC_APPLICATION', None),
         )
 
     @classmethod
@@ -101,19 +101,22 @@ class CLI(object):
             format="%(asctime)-15s %(levelname)-8s %(message)s",
         )
 
-        if not any([args.channel_layer, args.server, args.nickname]):
+        if not all([args.application, args.server, args.nickname]):
             raise ValueError(
-                "--channel_layer, --server, and --nickname are required arguments. "
+                "--application, --server, and --nickname are required arguments. "
                 "Please add them via the command line or their respective env variables."
             )
 
         # import the channel layer
-        asgi_module, layer_path = args.channel_layer.split(':', 1)
-        channel_module = importlib.import_module(asgi_module)
-        for part in layer_path.split('.'):
-            channel_layer = getattr(channel_module, part)
+        asgi_module, application_path = args.application.split(':', 1)
+        application_module = importlib.import_module(asgi_module)
+        for part in application_path.split('.'):
+            application = getattr(application_module, part)
 
-        client = ChannelsIRCClient(channel_layer)
+        client = ChannelsIRCClient(application)
+
+        logger.info('Connecting to IRC Server {}:{}'.format(args.server, args.port))
+
         client.connect(
             args.server,
             args.port,
@@ -126,8 +129,23 @@ class CLI(object):
         try:
             client.start()
         except KeyboardInterrupt:
-            logging.info("Disconnecting from {}:{}...".format(
+            logger.info("Disconnecting from {}:{}...".format(
                 client.connection.server, client.connection.port
             ))
             client.disconnect()
+
+            loop = client.reactor.loop
+
+            tasks = asyncio.gather(
+                *asyncio.Task.all_tasks(loop=loop),
+                loop=loop,
+                return_exceptions=True
+            )
+            tasks.add_done_callback(lambda t: loop.stop())
+            tasks.cancel()
+
+            while not tasks.done() and not loop.is_closed():
+                loop.run_forever()
+        finally:
+            loop.close()
             sys.exit(0)
