@@ -1,5 +1,7 @@
 # Channels-IRC
 
+[![Join the chat at https://gitter.im/django-channels-irc/Lobby](https://badges.gitter.im/django-channels-irc/Lobby.svg)](https://gitter.im/django-channels-irc/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A bridge between IRC and Django's `channels`. Built according to the [ASGI IRC spec](https://github.com/django/channels/blob/master/docs/asgi/irc-client.rst)
 
 ## Installation
