@@ -77,6 +77,22 @@ class CLI(object):
             help='The application to dispatch to as path.to.module:instance.path',
             default=os.environ.get('CHANNELS_IRC_APPLICATION', None),
         )
+        self.parser.add_argument(
+            '--autoreconnect',
+            dest='autoreconnect',
+            action='store_true',
+            help=(
+                'Set autoreconnect to attempt to reconnect to the IRC server at regular intervals '
+                'if disconnected'
+            ),
+        )
+        self.parser.add_argument(
+            '--reconnect-delay',
+            dest='reconnect_delay',
+            type=int,
+            help='Time between reconnection attempts (in seconds). Default is 60',
+            default=os.environ.get('CHANNELS_IRC_RECONNECT_DELAY', 60)
+        )
 
     @classmethod
     def entrypoint(cls):
@@ -113,7 +129,14 @@ class CLI(object):
         for part in application_path.split('.'):
             application = getattr(application_module, part)
 
-        client = ChannelsIRCClient(application)
+        # Parse autoreconnect bool values
+        autoreconnect = os.environ.get('CHANNELS_IRC_RECONNECT', '') in ['true', 'True'] or args.autoreconnect
+
+        client = ChannelsIRCClient(
+            application,
+            autoreconnect=autoreconnect,
+            reconnect_delay=args.reconnect_delay,
+        )
 
         logger.info('Connecting to IRC Server {}:{}'.format(args.server, args.port))
 
@@ -123,7 +146,7 @@ class CLI(object):
             args.nickname,
             password=args.password,
             username=args.username,
-            ircname=args.realname
+            ircname=args.realname,
         )
 
         try:
