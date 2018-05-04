@@ -4,6 +4,7 @@ import traceback
 
 from asgiref.sync import sync_to_async
 from irc.client import SimpleIRCClient, Reactor
+from irc.functools import save_method_args
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,10 @@ class ChannelsReactor(Reactor):
 class ChannelsIRCClient(SimpleIRCClient):
     reactor_class = ChannelsReactor
 
-    def __init__(self, application):
+    def __init__(self, application, autoreconnect=False, reconnect_delay=60):
         self.application = application
+        self.autoreconnect = autoreconnect
+        self.reconnect_delay = reconnect_delay
 
         super().__init__()
 
@@ -46,7 +49,7 @@ class ChannelsIRCClient(SimpleIRCClient):
             self._send_application_msg({
                 'type': 'irc.receive',
                 'command': event.type,
-                'args': event.arguments,
+                'body': event.arguments,
                 'channel': event.target,
             })
 
@@ -70,19 +73,19 @@ class ChannelsIRCClient(SimpleIRCClient):
 
     def on_privmsg(self, connection, event):
         """
-        Sends message to `irc-client.receive` with incoming info
+        Sends message to `irc.receive` with incoming info
         """
         self._handle_on_message(connection, event)
 
     def on_pubmsg(self, connection, event):
         """
-        Sends message to `irc-client.receive` with incoming info
+        Sends message to `irc.receive` with incoming info
         """
         self._handle_on_message(connection, event)
 
     def on_disconnect(self, connection, event):
         """
-        Sends message type `irc-client.disconect` with disconnected server info
+        Sends message type `irc.disconnected` with disconnected server info
         """
         msg = {
             'type': 'irc.disconnect',
@@ -106,6 +109,7 @@ class ChannelsIRCClient(SimpleIRCClient):
         """
         self.connection.disconnect(message=message)
 
+    @save_method_args
     def connect(self, server, port, nickname, *args, **kwargs):
         """
         Instantiates the connection to the server.  Also creates the requisite
@@ -123,6 +127,7 @@ class ChannelsIRCClient(SimpleIRCClient):
             send=self.from_application),
             loop=self.reactor.loop
         )
+
         super().connect(server, port, nickname, *args, **kwargs)
 
     async def from_application(self, message):
@@ -145,6 +150,19 @@ class ChannelsIRCClient(SimpleIRCClient):
         else:
             raise ValueError("Cannot handle message type %s!" % message["type"])
 
+    async def _handle_status(self, msg):
+        """
+        Gets the current status of the IRC Interface server, returns that information to
+        channels
+        """
+        self._send_application_msg({
+            'type': 'irc.receive',
+            'command': 'status',
+            'body': {
+                'connected': self.connection.connected,
+            },
+        })
+
     async def _handle_join(self, msg):
         """
         Makes join call as requested from channels.  Channels msg should be in format:
@@ -157,8 +175,7 @@ class ChannelsIRCClient(SimpleIRCClient):
         channel = msg.get('channel', '')
 
         if channel:
-            channel = channel if channel[0] == '#' else '#{}'.format(channel)
-            self.connection.join(channel)
+            self.connection.join(self.format_channel_name(channel))
 
     async def _handle_message(self, msg):
         """
@@ -172,9 +189,8 @@ class ChannelsIRCClient(SimpleIRCClient):
         """
         channel = msg.get('channel', '')
 
-        channel = channel if channel[0] == '#' else '#{}'.format(channel)
         message = msg.get('body', '')
-        self.connection.privmsg(channel, message)
+        self.connection.privmsg(self.format_channel_name(channel), message)
 
     async def _handle_names(self, msg):
         """
@@ -187,48 +203,82 @@ class ChannelsIRCClient(SimpleIRCClient):
             }
         """
         channel = msg.get('channel', '')
-        channel = channel if channel[0] == '#' else '#{}'.format(channel)
 
-        self.connection.names(channel)
+        if channel:
+            self.connection.names(self.format_channel_name(channel))
 
     async def _handle_part(self, msg):
         """
         Handles PART commands
         """
         channel = msg.get('channel', '')
-        channel = channel if channel[0] == '#' else '#{}'.format(channel)
 
-        self.connection.part(channel)
+        if channel:
+            self.connection.part(self.format_channel_name(channel))
+
+    async def _handle_disconnect(self, msg):
+        """
+        a DISCONNECT command should disconnect from the IRC server. Channel msg should be in
+        the format:
+            {
+                'type': 'irc.send',
+                'command': 'disconnect',
+                'body': <MESSAGE_TEXT>,  # optional disconnect message
+            }
+        """
+        message = msg.get('body', '')
+        self.disconnect(message=message)
 
     def futures_checker(self):
         """
         Looks for exeptions raised in the application or irc loops
         """
-        for future in [self.application_instance, self.reactor.process_future]:
-            if future.done():
-                try:
-                    exception = future.exception()
-                except asyncio.CancelledError:
-                    # Future cancellation. We can ignore this.
-                    pass
-                else:
-                    if exception:
-                        exception_output = "{}\n{}{}".format(
-                            exception,
-                            "".join(traceback.format_tb(
-                                exception.__traceback__,
-                            )),
-                            "  {}".format(exception),
-                        )
-                        print(exception_output)
-                        logger.error(
-                            "Exception inside application: %s",
-                            exception_output,
-                        )
-                        self.disconnect()
+        if self.application_instance and self.application_instance.done():
+            try:
+                exception = self.application_instance.exception()
+            except asyncio.CancelledError:
+                # Future cancellation. We can ignore this.
+                pass
+            else:
+                if exception:
+                    exception_output = "{}\n{}{}".format(
+                        exception,
+                        "".join(traceback.format_tb(
+                            exception.__traceback__,
+                        )),
+                        "  {}".format(exception),
+                    )
+                    logger.error(
+                        "Exception inside application: %s",
+                        exception_output,
+                    )
+                    self.disconnect()
+
+            del self.application_instance
+            self.application_instance = None
 
         self.reactor.loop.call_later(1, self.futures_checker)
+
+    def reconnect_checker(self):
+        """
+        Checks at a regular interval as to whether the connection to IRC has been
+        disconnected, and re-starts the connection if it has
+        """
+        if not self.connection.connected and self.autoreconnect:
+            self.connect(*self._saved_connect.args, **self._saved_connect.kwargs)
+
+        self.reactor.loop.call_later(self.reconnect_delay, self.reconnect_checker)
 
     def start(self):
         self.reactor.loop.call_later(1, self.futures_checker)
+
+        if self.autoreconnect:
+            self.reactor.loop.call_later(self.reconnect_delay, self.reconnect_checker)
+
         super().start()
+
+    def format_channel_name(self, name):
+        """
+        Adds missing `#` if necessary
+        """
+        return name if name[0] == '#' else '#{}'.format(name)

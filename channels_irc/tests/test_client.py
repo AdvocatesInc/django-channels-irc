@@ -1,7 +1,7 @@
 import asyncio
 
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from ..consumers import AsyncIrcConsumer
 from ..client import ChannelsIRCClient
@@ -30,6 +30,7 @@ class ChannelsIRCClientTests(TestCase):
 
         self.client = ChannelsIRCClient(AsyncIrcConsumer)
         self.client.connect('test.irc.server', 6667, 'advogg')
+        self.client.connection.send_raw = Mock()
 
         self.mock_connection = MockConnection(server='test.irc.server', port=6667)
 
@@ -78,7 +79,7 @@ class ChannelsIRCClientTests(TestCase):
             'type': 'irc.receive',
             'command': 'join',
             'channel': '#testchannel',
-            'args': [''],
+            'body': [''],
         })
 
     @async_test
@@ -136,3 +137,79 @@ class ChannelsIRCClientTests(TestCase):
             'command': 'message',
             'body': 'hello',
         })
+
+    @async_test
+    async def test_handle_join_calls_send_raw(self):
+        """
+        `_handle_join` should take the Channels message and send the appropriate join
+        to IRC
+        """
+        join_msg = {
+            'type': 'irc.send',
+            'command': 'join',
+            'channel': '#advogg',
+        }
+
+        await self.client._handle_join(join_msg)
+
+        self.client.connection.send_raw.assert_called_with('JOIN #advogg')
+
+    @async_test
+    async def test_handle_join_adds_missing_hashtag(self):
+        """
+        `_handle_join` should add # to the channel name if it's missing
+        """
+        join_msg = {
+            'type': 'irc.send',
+            'command': 'join',
+            'channel': 'advogg',
+        }
+
+        await self.client._handle_join(join_msg)
+
+        self.client.connection.send_raw.assert_called_with('JOIN #advogg')
+
+    @async_test
+    async def test_handle_join_does_nothing_if_no_channel_is_specified(self):
+        """
+        `_handle_join` should not be called if no channel is given
+        """
+        join_msg = {
+            'type': 'irc.send',
+            'command': 'join',
+        }
+
+        await self.client._handle_join(join_msg)
+
+        self.client.connection.send_raw.assert_not_called()
+
+    @async_test
+    async def test_handle_message_calls_send_raw(self):
+        """
+        `_handle_message` should call `send_raw` with the appropriate PRIVMSG text
+        """
+        privmsg = {
+            'type': 'irc.send',
+            'command': 'message',
+            'channel': 'advogg',
+            'body': 'Hello World!',
+        }
+
+        await self.client._handle_message(privmsg)
+
+        self.client.connection.send_raw.assert_called_with('PRIVMSG #advogg :Hello World!')
+
+    @async_test
+    async def test_handle_part_calls_send_raw(self):
+        """
+        `_handle_part` should call `send_raw` with the appropriate PART message
+        """
+        part_msg = {
+            'type': 'irc.send',
+            'command': 'part',
+            'channel': 'advogg',
+        }
+
+        await self.client._handle_part(part_msg)
+
+        self.client.connection.send_raw.assert_called_with('PART #advogg')
