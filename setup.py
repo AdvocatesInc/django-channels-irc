@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 from channels_irc import __version__
 
-readme = os.path.join(os.path.dirname(__file__), 'README.md')
+readme = os.path.join(os.path.dirname(__file__), 'PYPI_README.rst')
 
 setup(
     name='channels_irc',
@@ -18,9 +18,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'irc>=16.1',
+        'irc>=16.4',
         'asgiref>=2.1.6',
-        'channels==2.0.2',
+        'channels>=2.0.2',
     ],
     entry_points={'console_scripts': [
         'channels-irc = channels_irc.cli:CLI.entrypoint'

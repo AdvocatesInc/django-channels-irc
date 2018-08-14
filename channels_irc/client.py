@@ -1,38 +1,17 @@
 import logging
 import asyncio
 import traceback
+from urllib.error import URLError
+from socket import gaierror
 
 from asgiref.sync import sync_to_async
-from irc.client import SimpleIRCClient, Reactor
-from irc.functools import save_method_args
+from irc.client_aio import AioSimpleIRCClient, IrcProtocol, AioConnection, AioReactor
+# from irc.functools import save_method_args
 
 logger = logging.getLogger(__name__)
 
 
-class ChannelsReactor(Reactor):
-    def __init__(self, *args, **kwargs):
-        self.loop = asyncio.get_event_loop()
-        super().__init__(*args, **kwargs)
-
-    async def process_once_loop(self, timeout=0):
-        """
-        Transfers the process_once function to the asyncio event loop
-        """
-        while True:
-            await asyncio.sleep(0)
-            await sync_to_async(self.process_once)(timeout)
-
-    def process_forever(self, timeout=0.2):
-        """
-        Use asyncio as event loop instead of select-based loop
-        """
-        self.process_future = asyncio.ensure_future(self.process_once_loop(timeout), loop=self.loop)
-        self.loop.run_forever()
-
-
-class ChannelsIRCClient(SimpleIRCClient):
-    reactor_class = ChannelsReactor
-
+class ChannelsIRCClient(AioSimpleIRCClient):
     def __init__(self, application, autoreconnect=False, reconnect_delay=60):
         self.application = application
         self.autoreconnect = autoreconnect
@@ -109,8 +88,8 @@ class ChannelsIRCClient(SimpleIRCClient):
         """
         self.connection.disconnect(message=message)
 
-    @save_method_args
-    def connect(self, server, port, nickname, *args, **kwargs):
+    # @save_method_args
+    async def connect(self, server, port, nickname, *args, **kwargs):
         """
         Instantiates the connection to the server.  Also creates the requisite
         application instance
@@ -128,7 +107,12 @@ class ChannelsIRCClient(SimpleIRCClient):
             loop=self.reactor.loop
         )
 
-        super().connect(server, port, nickname, *args, **kwargs)
+        try:
+            await self.connection.connect(
+                server, port, nickname, *args, **kwargs
+            )
+        except gaierror:
+            logger.debug('Connection attempt failed')
 
     async def from_application(self, message):
         """
@@ -265,7 +249,18 @@ class ChannelsIRCClient(SimpleIRCClient):
         disconnected, and re-starts the connection if it has
         """
         if not self.connection.connected and self.autoreconnect:
-            self.connect(*self._saved_connect.args, **self._saved_connect.kwargs)
+            logger.log('Attempting to reconnect..')
+            asyncio.ensure_future(
+                self.connect(
+                    self.connection.server,
+                    self.connection.port,
+                    self.connection.nickname,
+                    password=self.connection.password,
+                    username=self.connection.username,
+                    ircname=self.connection.ircname,
+                ),
+                loop=self.reactor.loop
+            )
 
         self.reactor.loop.call_later(self.reconnect_delay, self.reconnect_checker)
 
