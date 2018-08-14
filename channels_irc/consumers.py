@@ -79,6 +79,23 @@ class IrcConsumer(SyncConsumer):
             'body': text,
         })
 
+    def send_command(self, command, channel=None, body=None):
+        """
+        Sends a command to the IRC Server.  Message should be of the format:
+            {
+                'type': 'irc.command',
+                'command': '<IRC_COMMAND>',
+                'channel': '<IRC_CHANNEL>',  # Optional, depending on command
+                'body': '<COMMAND_TEXT>',  # Optional, depending on command
+            }
+        """
+        self.send({
+            'type': 'irc.send',
+            'command': command,
+            'channel': channel,
+            'body': body,
+        })
+
 
 class AsyncIrcConsumer(AsyncConsumer):
     """

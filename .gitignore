@@ -3,3 +3,7 @@
 build/
 *.egg-info/
 dist/
+
+# Docs builds files #
+#####################
+docs/_build/

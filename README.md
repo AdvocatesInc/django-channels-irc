@@ -2,64 +2,85 @@
 
 [![Join the chat at https://gitter.im/django-channels-irc/Lobby](https://badges.gitter.im/django-channels-irc/Lobby.svg)](https://gitter.im/django-channels-irc/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-A bridge between IRC and Django's `channels`. Built according to the [ASGI IRC spec](https://github.com/django/channels/blob/master/docs/asgi/irc-client.rst)
+**Django Channels IRC** is a bridge between IRC and Django's `channels`.  It contains both a new interface server fro connecting to IRC and Channels consumers -- everything you need to turn your Django app into an IRC chatbot, chat monitoring/moderating service, or whatever else you might use a real-time IRC client to do.
 
 ## Installation
 
-run `python setup.py install` to install the library and set up the command line interface
+Install the package from pip:
 
-## Usage
-
-The interface server can be started by simply running the command,
-
-```
-channels-irc
+```bash
+pip install channels-irc
 ```
 
-The server requires that the `server`, `nickname`, and `application` properties be set. The `application` should be an import string pointing to the location of your app's ASGI application. Hence, if your app was named `myapp`, contained an ASGI filed called `asgi.py`, and your ASGI application is named `my_application`, you could start the server by running:
+## Basic Usage
 
-```
-channels-irc -s 'irc.freenode.net' -n 'my_irc_nickname' -a 'myapp.asgi:my_application'
-```
+1. Add the library to `INSTALLED_APPS`:
 
-You can also set these values using the env variables `CHANNELS_IRC_SERVER`, `CHANNELS_IRC_NICKNAME`, and `CHANNELS_IRC_LAYER`.
+    ```
+    INSTALLED_APPS = (
+        ...
+        'channels_irc',
+    )
+    ```
 
-## IRC Consumers
+2. Create a Consumer
 
-`channels_irc` is comes with the `IrcConsumer` and the `AsyncIrcConsumer` for bootstrapping IRC connection handling.
+    **Django Channels IRC** contains two consumers for interacting with the IRC Client: `IrcConsumer` and `AsyncIrcConsumer`:
 
-```
-from channels_irc import IrcConsumer
+    ```python
+    from channels_irc import IrcConsumer
 
-class MyConsumer(IrcConsumer):
-    def connect(self, server, port, nickname):
-        """
-        Optional hook for actions on connection to IRC Server
-        """
-        print('Connected to server {}:{} with nickname'.format(server, port, nickname)
+    class MyIrcConsumer(IrcConsumer):
+        def connect(self, server, port, nickname):
+            """
+            Optional hook for actions on connection to IRC Server
+            """
+            print('Connected to server {}:{} with nickname'.format(server, port, nickname)
 
-    def disconnect(self, server, port):
-        """
-        Optionl hook fr actions on disconnect from IRC Server
-        """
-        print('Disconnect from server {}:{}'.format(server, port)
+        def disconnect(self, server, port):
+            """
+            Optionl hook fr actions on disconnect from IRC Server
+            """
+            print('Disconnect from server {}:{}'.format(server, port)
 
-    def my_custom_action(self):
-        """
-        Use built-in functions to send basic IRC commands
-        """
-        self.message('my-channel', 'here is what I wanted to say')
-```
+        def my_custom_message(self):
+            """
+            Use built-in functions to send basic IRC messages
+            """
+            self.send_message('my-channel', 'here is what I wanted to say')
 
-Make sure to use `irc` as the protocol in the `ProtocolTypeRouter`
+        def my_custom_command(self):
+            """
+            You can also use built-in functions to send basic IRC commands
+            """
+            self.send_command('join', channel='some-other-channel')
+    ```
 
-```
-from channels.routing import ProtocolTypeRouter
+3. Add your consumer(s) to your router
 
-from my_irc_app.consumers import MyConsumer
+    You can use the `irc` type in channels `ProtocolTypeRouter` to connect your new consumer to the interface server, and ensure your `irc` messages are delivered to the right place:
 
+    ```python
+    from channels.routing import ProtocolTypeRouter
+    from myapp.consumers import MyIrcConsumer
 
-application = ProtocolTypeRouter({
-    'irc': MyConsumer,
-})
-```
+    application = ProtocolTypeRouter({
+        'irc': MyIrcConsumer,
+    })
+    ```
+
+4. Start the interface server
+
+    The interface server can be started by simply running this in the command line:
+
+    ```bash
+    channels-irc
+    ```
+
+    The server requires that the `server`, `nickname`, and `application` properties be set. The `application` should be an import string pointing to the location of your app's ASGI application. Hence, if your app was named `myapp`, contained an ASGI filed called `asgi.py`, and your ASGI application is named `my_application`, you could start the server by running:
+
+    ```
+    channels-irc -s 'irc.freenode.net' -n 'my_irc_nickname' -a 'myapp.asgi:my_application'
+    ```
+
+    You can also set these values using the env variables `CHANNELS_IRC_SERVER`, `CHANNELS_IRC_NICKNAME`, and `CHANNELS_IRC_LAYER`.

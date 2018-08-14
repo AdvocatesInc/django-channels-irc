@@ -24,7 +24,7 @@ class CLI(object):
             '-s',
             '--server',
             dest='server',
-            help='IRC server to connect to. Can also be set from CHANNALS_IRC_SERVER env variable',
+            help='IRC server to connect to. Can also be set from CHANNELS_IRC_SERVER env variable',
             default=os.environ.get('CHANNELS_IRC_SERVER', None),
         )
         self.parser.add_argument(
@@ -60,7 +60,7 @@ class CLI(object):
             '-r',
             '--realname',
             dest='realname',
-            help='Real name on the IRC server.  If none is provided, the value for `nickname will be used',
+            help='Real name on the IRC server.  If none is provided, the value for `nickname` will be used',
             default=None,
         )
         self.parser.add_argument(
@@ -140,14 +140,14 @@ class CLI(object):
 
         logger.info('Connecting to IRC Server {}:{}'.format(args.server, args.port))
 
-        client.connect(
+        client.reactor.loop.run_until_complete(client.connect(
             args.server,
             args.port,
             args.nickname,
             password=args.password,
             username=args.username,
             ircname=args.realname,
-        )
+        ))
 
         try:
             client.start()
