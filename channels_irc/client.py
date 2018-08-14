@@ -1,12 +1,9 @@
 import logging
 import asyncio
 import traceback
-from urllib.error import URLError
 from socket import gaierror
 
-from asgiref.sync import sync_to_async
-from irc.client_aio import AioSimpleIRCClient, IrcProtocol, AioConnection, AioReactor
-# from irc.functools import save_method_args
+from irc.client_aio import AioSimpleIRCClient
 
 logger = logging.getLogger(__name__)
 

@@ -29,7 +29,7 @@ class ChannelsIRCClientTests(TestCase):
         asyncio.set_event_loop(self.loop)
 
         self.client = ChannelsIRCClient(AsyncIrcConsumer)
-        self.client.connect('test.irc.server', 6667, 'advogg')
+        self.loop.run_until_complete(self.client.connect('test.irc.server', 6667, 'advogg'))
         self.client.connection.send_raw = Mock()
 
         self.mock_connection = MockConnection(server='test.irc.server', port=6667)

@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Django Channels IRC'
-copyright = '2018, Matt Nishi-Broach'
-author = 'Matt Nishi-Broach'
+copyright = '2018, Advocates, Inc'
+author = 'Advocates, Inc'
 
 # The short X.Y version
 version = ''
@@ -129,7 +129,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'DjangoChannelsIRC.tex', 'Django Channels IRC Documentation',
-     'Matt Nishi-Broach', 'manual'),
+     'Advocates, Inc', 'manual'),
 ]
 
 
