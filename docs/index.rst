@@ -7,7 +7,11 @@
 Welcome to Django Channels IRC's documentation!
 ===============================================
 
-**Django Channels IRC** is a bridge between IRC and Django's ``channels``.  It contains both a new interface server fro connecting to IRC and Channels consumers -- everything you need to turn your Django app into an IRC chatbot, chat monitoring/moderating service, or whatever else you might use a real-time IRC client to do.
+**Django Channels IRC** is a bridge between IRC and Django's ``channels``. 
+It contains both a new interface server for connecting to IRC and Channels
+consumers -- everything you need to turn your Django app into an IRC chatbot,
+chat monitoring/moderating service, or whatever else you might use a real-time
+IRC client to do.
 
 Installation
 ============
@@ -22,4 +26,4 @@ Install the package from pip::
 
    basic-usage
    command-line
-
+   irc-consumer

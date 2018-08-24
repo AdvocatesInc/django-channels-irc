@@ -14,8 +14,8 @@ Usage
 
 Follow these steps to set up **Django Channels IRC** in your project
 
-Load the Library
-================
+Add to INSTALLED_APPS
+=====================
 
 Add the library to ``INSTALLED_APPS``::
 
@@ -33,15 +33,15 @@ IRC interface server: ``IrcConsumer`` and ``AsyncIrcConsumer``::
     from channels_irc import IrcConsumer
 
     class MyIrcConsumer(IrcConsumer):
-        def connect(self, server, port, nickname):
+        def welcome(self, channel):
             """
             Optional hook for actions on connection to IRC Server
             """
-            print('Connected to server {}:{} with nickname'.format(server, port, nickname)
+            print('Connected to IRC with nickname'.format(nickname)
 
         def disconnect(self, server, port):
             """
-            Optionl hook fr actions on disconnect from IRC Server
+            Optionl hook for actions on disconnect from IRC Server
             """
             print('Disconnect from server {}:{}'.format(server, port)
 

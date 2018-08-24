@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: ~/advocate-backend
     docker:
-      - image: circleci/python:3.5.3
+      - image: circleci/python:3.6.5
 
     steps:
       - checkout
@@ -33,7 +33,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            python3 -m unittest
+            python3 manage.py test
 
       - run:
           name: run linting

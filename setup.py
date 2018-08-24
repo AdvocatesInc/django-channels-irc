@@ -19,7 +19,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'irc>=16.4',
-        'asgiref>=2.1.6',
+        'asgiref>=2.3.0',
         'channels>=2.0.2',
     ],
     entry_points={'console_scripts': [
