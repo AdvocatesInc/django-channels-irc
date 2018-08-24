@@ -37,7 +37,7 @@ class AsyncIrcConsumerTests(AsyncTestCase):
         communicator = ApplicationCommunicator(AsyncIrcConsumer, {'type': 'irc'})
 
         # Give the loop a beat to initialize the instance
-        await asyncio.sleep(.1)
+        await communicator.receive_nothing(timeout=.2)
 
         await communicator.instance.send_command('join', channel='my_channel')
 
@@ -58,7 +58,7 @@ class AsyncIrcConsumerTests(AsyncTestCase):
         communicator = ApplicationCommunicator(AsyncIrcConsumer, {'type': 'irc'})
 
         # Give the loop a beat to initialize the instance
-        await asyncio.sleep(.1)
+        await communicator.receive_nothing(timeout=.2)
 
         await communicator.instance.send_message('my_channel', 'Hello IRC!')
 
