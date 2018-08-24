@@ -8,7 +8,7 @@ readme = os.path.join(os.path.dirname(__file__), 'PYPI_README.rst')
 setup(
     name='channels_irc',
     version=__version__,
-    url='https://github.com/AdvocatesInc/channels-chatbot',
+    url='https://github.com/AdvocatesInc/django-channels-irc',
     author='Advocates, Inc',
     author_email='admin@adv.gg',
     description='Interface server connecting Django\'s channels and IRC',
@@ -25,4 +25,17 @@ setup(
     entry_points={'console_scripts': [
         'channels-irc = channels_irc.cli:CLI.entrypoint'
     ]},
+    classifiers=[
+        'Environment :: Web Environment',
+        'Framework :: Django',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Topic :: Internet :: WWW/HTTP',
+    ],
 )

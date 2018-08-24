@@ -7,10 +7,10 @@ A bridge between IRC and Django's ``channels``.
 Installation
 ============
 
-run ``python setup.py install`` to install the library and set up the command line interface
+run ``pip install channels_irc`` to install the library and set up the command line interface
 
 Usage
-====
+=====
 
 Follow these steps to set up **Django Channels IRC** in your project
 
