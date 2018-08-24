@@ -1,8 +1,13 @@
 # Channels-IRC
 
 [![Join the chat at https://gitter.im/django-channels-irc/Lobby](https://badges.gitter.im/django-channels-irc/Lobby.svg)](https://gitter.im/django-channels-irc/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![CircleCI](https://circleci.com/gh/AdvocatesInc/django-channels-irc.svg?style=svg)](https://circleci.com/gh/AdvocatesInc/django-channels-irc)
 
-**Django Channels IRC** is a bridge between IRC and Django's `channels`.  It contains both a new interface server fro connecting to IRC and Channels consumers -- everything you need to turn your Django app into an IRC chatbot, chat monitoring/moderating service, or whatever else you might use a real-time IRC client to do.
+**Django Channels IRC** is a bridge between IRC and Django's `channels`.  It contains both a new interface server for connecting to IRC and Channels consumers -- everything you need to turn your Django app into an IRC chatbot, chat monitoring/moderating service, or whatever else you might use a real-time IRC client to do.
+
+## Documentation
+
+Full docs available at [django-channels-irc.readthedocs.io](https://django-channels-irc.readthedocs.io/en/latest/)
 
 ## Installation
 
@@ -31,7 +36,7 @@ pip install channels-irc
     from channels_irc import IrcConsumer
 
     class MyIrcConsumer(IrcConsumer):
-        def connect(self, server, port, nickname):
+        def welcome(self, channel):
             """
             Optional hook for actions on connection to IRC Server
             """

@@ -1,11 +1,8 @@
-import asyncio
-
-from unittest import TestCase
 from unittest.mock import patch, Mock
 
 from ..consumers import AsyncIrcConsumer
 from ..client import ChannelsIRCClient
-from .utils import async_test
+from .utils import async_test, AsyncTestCase
 
 
 class MockEvent(object):
@@ -22,11 +19,10 @@ class MockConnection(object):
         self.port = kwargs.get('port', None)
 
 
-class ChannelsIRCClientTests(TestCase):
+class ChannelsIRCClientTests(AsyncTestCase):
     @patch('irc.client.SimpleIRCClient.connect')
     def setUp(self, mock_connect):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
+        super().setUp()
 
         self.client = ChannelsIRCClient(AsyncIrcConsumer)
         self.loop.run_until_complete(self.client.connect('test.irc.server', 6667, 'advogg'))
@@ -34,34 +30,21 @@ class ChannelsIRCClientTests(TestCase):
 
         self.mock_connection = MockConnection(server='test.irc.server', port=6667)
 
-    def tearDown(self):
-        tasks = asyncio.gather(
-            *asyncio.Task.all_tasks(loop=self.loop),
-            loop=self.loop,
-            return_exceptions=True
-        )
-        tasks.add_done_callback(lambda t: self.loop.stop())
-        tasks.cancel()
-
-        while not tasks.done() and not self.loop.is_closed():
-            self.loop.run_forever()
-
-        self.loop.close()
-
     @async_test
     async def test_on_welcome(self):
         """
         According to the ASGI spec, when an IRC channel is joined, the client should
         return the a message on the `irc.connect` channel
         """
-        mock_event = MockEvent()
+        mock_event = MockEvent(target='test-channel')
         self.client.on_welcome(self.mock_connection, mock_event)
 
         response = await self.client.application_queue.get()
 
         self.assertEqual(response, {
-            'type': 'irc.connect',
-            'server': ['test.irc.server', 6667],
+            'type': 'irc.receive',
+            'channel': 'test-channel',
+            'command': 'welcome',
         })
 
     @async_test

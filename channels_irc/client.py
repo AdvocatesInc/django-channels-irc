@@ -1,20 +1,29 @@
 import logging
 import asyncio
-import traceback
 from socket import gaierror
 
 from irc.client_aio import AioSimpleIRCClient
 
+from .server import BaseServer
+
 logger = logging.getLogger(__name__)
 
 
-class ChannelsIRCClient(AioSimpleIRCClient):
-    def __init__(self, application, autoreconnect=False, reconnect_delay=60):
+class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
+    def __init__(self, application, autoreconnect=False, reconnect_delay=60, loop=None):
         self.application = application
         self.autoreconnect = autoreconnect
         self.reconnect_delay = reconnect_delay
 
-        super().__init__()
+        self.reactor = self.reactor_class(loop=loop)
+        self.connection = self.reactor.server()
+        self.loop = self.reactor.loop
+
+        self.reactor.add_global_handler("all_events", self._dispatcher, -10)
+
+    @property
+    def connected(self):
+        return getattr(self.connection, 'connected', False)
 
     def _dispatcher(self, connection, event):
         method = getattr(self, "on_" + event.type, None)
@@ -29,21 +38,16 @@ class ChannelsIRCClient(AioSimpleIRCClient):
                 'channel': event.target,
             })
 
-    def _send_application_msg(self, msg):
-        """
-        sends a msg (serializable dict) to the appropriate Django channel
-        """
-        return self.application_queue.put_nowait(msg)
-
     def on_welcome(self, connection, event):
         """
-        Sends `irc.connect` message type
+        Sends `irc.receive` with welcome info
         """
         logger.info('Connected to IRC Server {}:{}'.format(connection.server, connection.port))
 
         msg = {
-            'type': 'irc.connect',
-            'server': [connection.server, connection.port],
+            'type': 'irc.receive',
+            'command': 'welcome',
+            'channel': event.target,
         }
         self._send_application_msg(msg)
 
@@ -64,7 +68,7 @@ class ChannelsIRCClient(AioSimpleIRCClient):
         Sends message type `irc.disconnected` with disconnected server info
         """
         msg = {
-            'type': 'irc.disconnect',
+            'type': 'irc.on.disconnect',
             'server': [connection.server, connection.port],
         }
         self._send_application_msg(msg)
@@ -81,28 +85,25 @@ class ChannelsIRCClient(AioSimpleIRCClient):
 
     def disconnect(self, message=""):
         """
-        Disconnects from IRC server
+        Disconnects from the current IRC connection
         """
+        logger.info("Disconnecting from {}:{}...".format(
+            self.connection.server, self.connection.port
+        ))
         self.connection.disconnect(message=message)
 
-    # @save_method_args
     async def connect(self, server, port, nickname, *args, **kwargs):
         """
         Instantiates the connection to the server.  Also creates the requisite
         application instance
         """
-        application_instance = self.application(scope={
+        scope = {
             'type': 'irc',
             'server': server,
             'port': port,
             'nickname': nickname,
-        })
-        self.application_queue = asyncio.Queue()
-        self.application_instance = asyncio.ensure_future(application_instance(
-            receive=self.application_queue.get,
-            send=self.from_application),
-            loop=self.reactor.loop
-        )
+        }
+        self.create_application(scope=scope, from_consumer=self.from_consumer)
 
         try:
             await self.connection.connect(
@@ -111,9 +112,12 @@ class ChannelsIRCClient(AioSimpleIRCClient):
         except gaierror:
             logger.debug('Connection attempt failed')
 
-    async def from_application(self, message):
+        if self.autoreconnect:
+            self.loop.call_later(self.reconnect_delay, self.reconnect_checker)
+
+    async def from_consumer(self, message):
         """
-        Receives message from channels from the applications.  Message should have the format:
+        Receives message from channels from the consumer.  Message should have the format:
             {
                 'type': 'irc.send',
                 'command': VALID_COMMAND_TYPE
@@ -140,7 +144,7 @@ class ChannelsIRCClient(AioSimpleIRCClient):
             'type': 'irc.receive',
             'command': 'status',
             'body': {
-                'connected': self.connection.connected,
+                'connected': self.connected,
             },
         })
 
@@ -178,9 +182,9 @@ class ChannelsIRCClient(AioSimpleIRCClient):
         Posts a NAMES request to the passed channel from Django channels.
         Channel msg should be in the format:
             {
-                'type': 'irc.send',
-                'command': 'names',
-                'channel': <CHANNEL_NAME>,
+            'type': 'irc.send',
+            'command': 'names',
+            'channel': <CHANNEL_NAME>,
             }
         """
         channel = msg.get('channel', '')
@@ -202,51 +206,23 @@ class ChannelsIRCClient(AioSimpleIRCClient):
         a DISCONNECT command should disconnect from the IRC server. Channel msg should be in
         the format:
             {
-                'type': 'irc.send',
-                'command': 'disconnect',
-                'body': <MESSAGE_TEXT>,  # optional disconnect message
+            'type': 'irc.send',
+            'command': 'disconnect',
+            'body': <MESSAGE_TEXT>,  # optional disconnect message
             }
         """
         message = msg.get('body', '')
         self.disconnect(message=message)
-
-    def futures_checker(self):
-        """
-        Looks for exeptions raised in the application or irc loops
-        """
-        if self.application_instance and self.application_instance.done():
-            try:
-                exception = self.application_instance.exception()
-            except asyncio.CancelledError:
-                # Future cancellation. We can ignore this.
-                pass
-            else:
-                if exception:
-                    exception_output = "{}\n{}{}".format(
-                        exception,
-                        "".join(traceback.format_tb(
-                            exception.__traceback__,
-                        )),
-                        "  {}".format(exception),
-                    )
-                    logger.error(
-                        "Exception inside application: %s",
-                        exception_output,
-                    )
-                    self.disconnect()
-
-            del self.application_instance
-            self.application_instance = None
-
-        self.reactor.loop.call_later(1, self.futures_checker)
 
     def reconnect_checker(self):
         """
         Checks at a regular interval as to whether the connection to IRC has been
         disconnected, and re-starts the connection if it has
         """
-        if not self.connection.connected and self.autoreconnect:
-            logger.log('Attempting to reconnect..')
+        if not self.connected and self.autoreconnect:
+            logger.info('Attempting to reconnect to {}:{}'.format(
+                self.connection.server, self.connection.port
+            ))
             asyncio.ensure_future(
                 self.connect(
                     self.connection.server,
@@ -256,17 +232,12 @@ class ChannelsIRCClient(AioSimpleIRCClient):
                     username=self.connection.username,
                     ircname=self.connection.ircname,
                 ),
-                loop=self.reactor.loop
+                loop=self.loop
             )
 
-        self.reactor.loop.call_later(self.reconnect_delay, self.reconnect_checker)
+        self.loop.call_later(self.reconnect_delay, self.reconnect_checker)
 
     def start(self):
-        self.reactor.loop.call_later(1, self.futures_checker)
-
-        if self.autoreconnect:
-            self.reactor.loop.call_later(self.reconnect_delay, self.reconnect_checker)
-
         super().start()
 
     def format_channel_name(self, name):

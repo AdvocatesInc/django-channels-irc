@@ -6,6 +6,7 @@ import os
 import asyncio
 
 from .client import ChannelsIRCClient
+from .multi import MultiConnectionClient
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +94,15 @@ class CLI(object):
             help='Time between reconnection attempts (in seconds). Default is 60',
             default=os.environ.get('CHANNELS_IRC_RECONNECT_DELAY', 60)
         )
+        self.parser.add_argument(
+            '--multi',
+            dest='multi',
+            action='store_true',
+            help=(
+                'Use to load the multi-connection server instead of the single connection server. '
+                'Useful for things like chatbots that need to post from mutliple accounts.'
+            ),
+        )
 
     @classmethod
     def entrypoint(cls):
@@ -117,47 +127,49 @@ class CLI(object):
             format="%(asctime)-15s %(levelname)-8s %(message)s",
         )
 
-        if not all([args.application, args.server, args.nickname]):
-            raise ValueError(
-                "--application, --server, and --nickname are required arguments. "
-                "Please add them via the command line or their respective env variables."
-            )
-
         # import the channel layer
         asgi_module, application_path = args.application.split(':', 1)
         application_module = importlib.import_module(asgi_module)
         for part in application_path.split('.'):
             application = getattr(application_module, part)
 
-        # Parse autoreconnect bool values
+        # Parse bool flag values
         autoreconnect = os.environ.get('CHANNELS_IRC_RECONNECT', '') in ['true', 'True'] or args.autoreconnect
+        multi = os.environ.get('CHANNELS_IRC_MULTI', '') in ['true', 'True'] or args.multi
 
-        client = ChannelsIRCClient(
+        client_class = ChannelsIRCClient if not multi else MultiConnectionClient
+
+        client = client_class(
             application,
             autoreconnect=autoreconnect,
             reconnect_delay=args.reconnect_delay,
         )
 
-        logger.info('Connecting to IRC Server {}:{}'.format(args.server, args.port))
+        if not multi:
+            # If not a MultiConnectionClient, automatically connect to the IRC server
+            if not all([args.application, args.server, args.nickname]):
+                raise ValueError(
+                    "--application, --server, and --nickname are required arguments. "
+                    "Please add them via the command line or their respective env variables."
+                )
 
-        client.reactor.loop.run_until_complete(client.connect(
-            args.server,
-            args.port,
-            args.nickname,
-            password=args.password,
-            username=args.username,
-            ircname=args.realname,
-        ))
+            logger.info('Connecting to IRC Server {}:{}'.format(args.server, args.port))
+
+            client.reactor.loop.run_until_complete(client.connect(
+                args.server,
+                args.port,
+                args.nickname,
+                password=args.password,
+                username=args.username,
+                ircname=args.realname,
+            ))
 
         try:
             client.start()
         except KeyboardInterrupt:
-            logger.info("Disconnecting from {}:{}...".format(
-                client.connection.server, client.connection.port
-            ))
             client.disconnect()
 
-            loop = client.reactor.loop
+            loop = client.loop
 
             tasks = asyncio.gather(
                 *asyncio.Task.all_tasks(loop=loop),
