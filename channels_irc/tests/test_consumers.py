@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import patch
 
 from channels.testing import ApplicationCommunicator
@@ -25,7 +24,7 @@ class AsyncIrcConsumerTests(AsyncTestCase):
             'body': None,
         })
 
-        await communicator.receive_nothing(timeout=.2)
+        await communicator.wait(timeout=.2)
         self.assertEqual(mock_welcome.call_count, 1)
 
     @async_test

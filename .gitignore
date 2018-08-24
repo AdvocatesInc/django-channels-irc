@@ -7,3 +7,7 @@ dist/
 # Docs builds files #
 #####################
 docs/_build/
+
+# Virtualenvs #
+###############
+env/

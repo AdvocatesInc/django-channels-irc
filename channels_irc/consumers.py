@@ -18,7 +18,6 @@ class AsyncIrcConsumer(AsyncConsumer):
                 await self.channel_layer.group_add(group, self.channel_name)
         except AttributeError:
             raise InvalidChannelLayerError("BACKEND is unconfigured or doesn't support groups")
-
         await self.welcome(channel)
 
     async def welcome(self, channel):
@@ -97,7 +96,6 @@ class MultiIrcConsumer(AsyncConsumer):
         """
         Called when the consumer is initially loaded.
         """
-        print('ON INIT')
         await self.on_init()
 
     async def on_init(self):
