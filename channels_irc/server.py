@@ -5,11 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-import logging
-
-logger = logging.getLogger(__name__)
-
-
 class BaseServer:
     """
     Base class for common interface server functions, including

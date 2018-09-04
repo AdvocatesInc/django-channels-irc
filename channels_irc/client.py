@@ -100,7 +100,6 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
         Instantiates the connection to the server.  Also creates the requisite
         application instance
         """
-        self.nickname=nickname
         scope = {
             'type': 'irc',
             'server': server,
@@ -115,7 +114,7 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
             )
         except gaierror:
             logger.debug('Connection attempt to {} with user {} failed '.format(
-              server, nickname   
+              server, nickname
             ))
 
         if self.autoreconnect and not is_reconnect:
