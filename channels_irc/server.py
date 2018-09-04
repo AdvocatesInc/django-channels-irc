@@ -5,12 +5,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class BaseServer:
     """
     Base class for common interface server functions, including
     creating an application, sending to the consumer, and application_checking/
     error handling
     """
+
     def _send_application_msg(self, msg):
         """
         sends a msg (serializable dict) to the appropriate Django channel
@@ -35,14 +41,11 @@ class BaseServer:
             loop=self.loop
         )
 
-        # Run checkers
-        self.loop.call_later(1, self.futures_checker)
-
     def futures_checker(self):
         """
         Looks for exeptions raised in the application or irc loops
         """
-        if self.application_instance and self.application_instance.done():
+        if getattr(self, 'application_instance', False) and self.application_instance.done():
             try:
                 exception = self.application_instance.exception()
             except asyncio.CancelledError:

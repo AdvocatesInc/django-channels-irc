@@ -20,6 +20,7 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
         self.loop = self.reactor.loop
 
         self.reactor.add_global_handler("all_events", self._dispatcher, -10)
+        self.loop.call_later(1, self.futures_checker)
 
     @property
     def connected(self):
@@ -92,11 +93,14 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
         ))
         self.connection.disconnect(message=message)
 
-    async def connect(self, server, port, nickname, *args, **kwargs):
+    async def connect(
+        self,  server, port, nickname, is_reconnect=False, *args, **kwargs
+    ):
         """
         Instantiates the connection to the server.  Also creates the requisite
         application instance
         """
+        self.nickname=nickname
         scope = {
             'type': 'irc',
             'server': server,
@@ -110,9 +114,11 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
                 server, port, nickname, *args, **kwargs
             )
         except gaierror:
-            logger.debug('Connection attempt failed')
+            logger.debug('Connection attempt to {} with user {} failed '.format(
+              server, nickname   
+            ))
 
-        if self.autoreconnect:
+        if self.autoreconnect and not is_reconnect:
             self.loop.call_later(self.reconnect_delay, self.reconnect_checker)
 
     async def from_consumer(self, message):
@@ -231,6 +237,7 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
                     password=self.connection.password,
                     username=self.connection.username,
                     ircname=self.connection.ircname,
+                    is_reconnect=True,
                 ),
                 loop=self.loop
             )

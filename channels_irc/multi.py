@@ -19,6 +19,7 @@ class MultiConnectionClient(BaseServer):
             scope={'type': 'irc.multi'}, from_consumer=self.from_consumer
         )
         self.send_init()
+        self.loop.call_later(1, self.futures_checker)
 
     def start(self):
         self.loop.run_forever()
