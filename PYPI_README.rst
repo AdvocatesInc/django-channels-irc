@@ -15,7 +15,8 @@ Documentation
 Full docs available at `django-channels-irc.readthedocs.io
 <https://django-channels-irc.readthedocs.io/en/latest/>`_.
 
-## Requirements
+Requirements
+============
 
 - `Django Channels 2+
   <https://channels.readthedocs.io/en/latest/>`_
