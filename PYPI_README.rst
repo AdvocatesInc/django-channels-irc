@@ -9,6 +9,17 @@ Installation
 
 run ``pip install channels_irc`` to install the library and set up the command line interface
 
+Documentation
+=============
+
+Full docs available at `django-channels-irc.readthedocs.io
+<https://django-channels-irc.readthedocs.io/en/latest/>`_.
+
+## Requirements
+
+- `Django Channels 2+
+  <https://channels.readthedocs.io/en/latest/>`_
+
 Usage
 =====
 

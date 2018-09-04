@@ -9,6 +9,10 @@
 
 Full docs available at [django-channels-irc.readthedocs.io](https://django-channels-irc.readthedocs.io/en/latest/)
 
+## Requirements
+
+- [Django Channels 2+](https://channels.readthedocs.io/en/latest/)
+
 ## Installation
 
 Install the package from pip:
