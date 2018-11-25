@@ -1,4 +1,5 @@
 from unittest.mock import patch, Mock
+from irc.client import NickMask
 
 from ..consumers import AsyncIrcConsumer
 from ..client import ChannelsIRCClient
@@ -7,7 +8,9 @@ from .utils import async_test, AsyncTestCase
 
 class MockEvent(object):
     def __init__(self, **kwargs):
-        self.source = kwargs.get('source', None)
+        self.source = NickMask(kwargs.get(
+            'source', 'axiologue!axiologue@axiologue.tmi.twitch.tv'
+        ))
         self.target = kwargs.get('target', None)
         self.arguments = kwargs.get('arguments', [''])
         self.type = kwargs.get('type', None)
