@@ -78,7 +78,7 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
         msg = {
             'type': 'irc.receive',
             'command': 'message',
-            'user': event.source,
+            'user': event.source.nick,
             'channel': event.target,
             'body': event.arguments[0],
         }
@@ -116,7 +116,6 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
             logger.debug('Connection attempt to {} with user {} failed '.format(
               server, nickname
             ))
-
         if self.autoreconnect and not is_reconnect:
             self.loop.call_later(self.reconnect_delay, self.reconnect_checker)
 
