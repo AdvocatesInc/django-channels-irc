@@ -82,7 +82,7 @@ class MultiConnectionClient(BaseServer):
         """
         key = self.get_connection_key(server, nickname)
 
-        connection = self.connections[key]
+        connection = self.connections.get(key)
 
         if connection is not None:
             connection.disconnect()
