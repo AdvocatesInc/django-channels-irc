@@ -33,12 +33,14 @@ class AsyncIrcConsumerTests(AsyncTestCase):
         `send_command` should format the correct message and return it to the
         server
         """
-        communicator = ApplicationCommunicator(AsyncIrcConsumer, {'type': 'irc'})
+        class SendCommandConsumer(AsyncIrcConsumer):
+            async def test_command(self, event):
+                await self.send_command('join', channel='my_channel')
+
+        communicator = ApplicationCommunicator(SendCommandConsumer, {'type': 'irc'})
 
         # Give the loop a beat to initialize the instance
-        await communicator.receive_nothing(timeout=.2)
-
-        await communicator.instance.send_command('join', channel='my_channel')
+        await communicator.send_input({'type': 'test.command'})
 
         event = await communicator.receive_output(timeout=1)
         self.assertEqual(event, {
@@ -54,12 +56,13 @@ class AsyncIrcConsumerTests(AsyncTestCase):
         `send_message` should format the correct message and return it to the
         server
         """
-        communicator = ApplicationCommunicator(AsyncIrcConsumer, {'type': 'irc'})
+        class SendMessageConsumer(AsyncIrcConsumer):
+            async def test_message(self, event):
+                await self.send_message('my_channel', 'Hello IRC!')
 
-        # Give the loop a beat to initialize the instance
-        await communicator.receive_nothing(timeout=.2)
+        communicator = ApplicationCommunicator(SendMessageConsumer, {'type': 'irc'})
 
-        await communicator.instance.send_message('my_channel', 'Hello IRC!')
+        await communicator.send_input({'type': 'test.message'})
 
         event = await communicator.receive_output(timeout=1)
         self.assertEqual(event, {
