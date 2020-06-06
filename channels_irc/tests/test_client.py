@@ -22,6 +22,14 @@ class MockConnection(object):
         self.port = kwargs.get('port', None)
 
 
+# monkey patch MagicMock
+async def async_magic():
+    pass
+
+
+Mock.__await__ = lambda x: async_magic().__await__()
+
+
 class ChannelsIRCClientTests(AsyncTestCase):
     @patch('irc.client_aio.AioConnection.connect')
     def setUp(self, mock_connect):
