@@ -186,9 +186,9 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
         Posts a NAMES request to the passed channel from Django channels.
         Channel msg should be in the format:
             {
-            'type': 'irc.send',
-            'command': 'names',
-            'channel': <CHANNEL_NAME>,
+                'type': 'irc.send',
+                'command': 'names',
+                'channel': <CHANNEL_NAME>,
             }
         """
         channel = msg.get('channel', '')
@@ -210,13 +210,29 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
         a DISCONNECT command should disconnect from the IRC server. Channel msg should be in
         the format:
             {
-            'type': 'irc.send',
-            'command': 'disconnect',
-            'body': <MESSAGE_TEXT>,  # optional disconnect message
+                'type': 'irc.send',
+                'command': 'disconnect',
+                'body': <MESSAGE_TEXT>,  # optional disconnect message
             }
         """
         message = msg.get('body', '')
         self.disconnect(message=message)
+
+    async def _handle_cap(self, msg):
+        """
+        a CAP command handles additional capabilities from the IRC server. Channel msg
+        should be in the format:
+            {
+                'type': 'irc.send',
+                'command': 'cap',
+                'subcommand': '<ONE OF: LS LIST REQ ACK NAK CLEAR END>',
+                'args': [], # optinal string list of additional arguments
+            }
+        """
+        subcommand = msg.get('subcommand')
+
+        if subcommand is not None:
+            self.connection.cap(subcommand, *msg.get('args', []))
 
     def reconnect_checker(self):
         """

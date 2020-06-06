@@ -23,7 +23,7 @@ class MockConnection(object):
 
 
 class ChannelsIRCClientTests(AsyncTestCase):
-    @patch('irc.client.SimpleIRCClient.connect')
+    @patch('irc.client_aio.AioConnection.connect')
     def setUp(self, mock_connect):
         super().setUp()
 
