@@ -134,7 +134,7 @@ class CLI(object):
             application = getattr(application_module, part)
 
         # Parse bool flag values
-        autoreconnect = os.environ.get('CHANNELS_IRC_RECONNECT', '') in ['true', 'True'] or args.autoreconnect
+        autoreconnect = os.environ.get('CHANNELS_IRC_AUTORECONNECT', '') in ['true', 'True'] or args.autoreconnect
         multi = os.environ.get('CHANNELS_IRC_MULTI', '') in ['true', 'True'] or args.multi
 
         client_class = ChannelsIRCClient if not multi else MultiConnectionClient
