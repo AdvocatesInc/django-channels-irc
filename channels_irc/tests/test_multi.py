@@ -13,7 +13,6 @@ class MultiConnectionClientTests(AsyncTestCase):
         client.application_instance = asyncio.Future()
         return client
 
-    @async_test
     async def test_send_init(self):
         """
         On creating a new instance of `MultiConnectionClient` it should
@@ -25,7 +24,6 @@ class MultiConnectionClientTests(AsyncTestCase):
         self.assertEqual(response, {'type': 'irc.multi.init'})
 
     @patch('channels_irc.multi.ChannelsIRCClient.connect', new_callable=AsyncMock)
-    @async_test
     async def test_creating_new_connection(self, mock_connect):
         """
         Sending a `irc.multi.connect` message to the `MultiConnectionClient`
@@ -52,7 +50,6 @@ class MultiConnectionClientTests(AsyncTestCase):
         )
 
     @patch('channels_irc.multi.ChannelsIRCClient.disconnect', new_callable=AsyncMock)
-    @async_test
     async def test_disconnecting(self, mock_disconnect):
         """
         Sending a `irc.multi.disconnect` message to the `MultiConnectionClient`

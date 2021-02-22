@@ -1,14 +1,14 @@
 from unittest.mock import patch
 
 from channels.testing import ApplicationCommunicator
+from django.test import TestCase
 
-from .utils import AsyncTestCase, AsyncMock, async_test
+from .utils import AsyncTestCase, AsyncMock
 from ..consumers import AsyncIrcConsumer
 
 
-class AsyncIrcConsumerTests(AsyncTestCase):
+class AsyncIrcConsumerTests(TestCase):
     @patch('channels_irc.consumers.AsyncIrcConsumer.welcome', new_callable=AsyncMock)
-    @async_test
     async def test_on_welcome(self, mock_welcome):
         """
         `irc.receive` called with a `welcome` command should call the
@@ -27,13 +27,13 @@ class AsyncIrcConsumerTests(AsyncTestCase):
         await communicator.wait(timeout=.2)
         self.assertEqual(mock_welcome.call_count, 1)
 
-    @async_test
     async def test_send_command(self):
         """
         `send_command` should format the correct message and return it to the
         server
         """
         class SendCommandConsumer(AsyncIrcConsumer):
+            _asgi_single_callable = True
             async def test_command(self, event):
                 await self.send_command('join', channel='my_channel')
 
@@ -50,13 +50,13 @@ class AsyncIrcConsumerTests(AsyncTestCase):
             'body': None,
         })
 
-    @async_test
     async def test_send_message(self):
         """
         `send_message` should format the correct message and return it to the
         server
         """
         class SendMessageConsumer(AsyncIrcConsumer):
+            _asgi_single_callable = True
             async def test_message(self, event):
                 await self.send_message('my_channel', 'Hello IRC!')
 
