@@ -11,3 +11,6 @@ docs/_build/
 # Virtualenvs #
 ###############
 env/
+Pipfile
+Pipfile.lock
+pyproject.toml

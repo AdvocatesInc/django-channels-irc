@@ -32,11 +32,25 @@ class AsyncTestCase(TestCase):
         asyncio.set_event_loop(self.loop)
 
     def tearDown(self):
-        tasks = asyncio.gather(
-            *asyncio.Task.all_tasks(loop=self.loop),
-            loop=self.loop,
-            return_exceptions=True
-        )
+        def shutdown_exception_handler(loop, context):
+            if "exception" not in context or not isinstance(
+                    context["exception"], asyncio.CancelledError
+            ):
+                loop.default_exception_handler(context)
+
+        self.loop.set_exception_handler(shutdown_exception_handler)
+        try:
+            tasks = asyncio.gather(
+                *asyncio.Task.all_tasks(loop=self.loop),
+                loop=self.loop,
+                return_exceptions=True
+            )
+        except AttributeError:
+            tasks = asyncio.gather(
+                *asyncio.all_tasks(loop=self.loop),
+                loop=self.loop,
+                return_exceptions=True
+            )
         tasks.add_done_callback(lambda t: self.loop.stop())
         tasks.cancel()
 

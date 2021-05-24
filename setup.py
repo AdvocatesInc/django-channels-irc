@@ -20,7 +20,7 @@ setup(
     install_requires=[
         'irc>=16.4',
         'asgiref>=3.0.0',
-        'channels>=2.0.2',
+        'channels>=2.0.2,<3.0.0',
     ],
     entry_points={'console_scripts': [
         'channels-irc = channels_irc.cli:CLI.entrypoint'

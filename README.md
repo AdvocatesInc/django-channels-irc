@@ -11,7 +11,7 @@ Full docs available at [django-channels-irc.readthedocs.io](https://django-chann
 
 ## Requirements
 
-- [Django Channels 2+](https://channels.readthedocs.io/en/latest/)
+- [Django Channels 2+](https://channels.readthedocs.io/en/latest/). This will *not* work with Channels 3+ in its current incarnation. An experimental implementation with Channels 3 is available on the [update-to-3](https://github.com/AdvocatesInc/django-channels-irc/tree/update-to-3) branch.
 
 ## Installation
 
