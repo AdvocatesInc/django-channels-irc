@@ -3,7 +3,7 @@ from unittest.mock import patch
 from channels.testing import ApplicationCommunicator
 from django.test import TestCase
 
-from .utils import AsyncTestCase, AsyncMock
+from .utils import AsyncMock
 from ..consumers import AsyncIrcConsumer
 
 
@@ -14,7 +14,7 @@ class AsyncIrcConsumerTests(TestCase):
         `irc.receive` called with a `welcome` command should call the
         `on_welcome`
         """
-        communicator = ApplicationCommunicator(AsyncIrcConsumer, {'type': 'irc'})
+        communicator = ApplicationCommunicator(AsyncIrcConsumer(), {'type': 'irc'})
 
         await communicator.send_input({
             'type': 'irc.receive',
@@ -33,11 +33,10 @@ class AsyncIrcConsumerTests(TestCase):
         server
         """
         class SendCommandConsumer(AsyncIrcConsumer):
-            _asgi_single_callable = True
             async def test_command(self, event):
                 await self.send_command('join', channel='my_channel')
 
-        communicator = ApplicationCommunicator(SendCommandConsumer, {'type': 'irc'})
+        communicator = ApplicationCommunicator(SendCommandConsumer(), {'type': 'irc'})
 
         # Give the loop a beat to initialize the instance
         await communicator.send_input({'type': 'test.command'})
@@ -56,11 +55,10 @@ class AsyncIrcConsumerTests(TestCase):
         server
         """
         class SendMessageConsumer(AsyncIrcConsumer):
-            _asgi_single_callable = True
             async def test_message(self, event):
                 await self.send_message('my_channel', 'Hello IRC!')
 
-        communicator = ApplicationCommunicator(SendMessageConsumer, {'type': 'irc'})
+        communicator = ApplicationCommunicator(SendMessageConsumer(), {'type': 'irc'})
 
         await communicator.send_input({'type': 'test.message'})
 

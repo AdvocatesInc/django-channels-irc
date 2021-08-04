@@ -1,13 +1,15 @@
 import asyncio
 from unittest.mock import patch, MagicMock
 
-from ..multi import MultiConnectionClient
-from ..consumers import MultiIrcConsumer
+from django.test import TestCase
+
 from ..client import ChannelsIRCClient
-from .utils import async_test, AsyncMock, AsyncTestCase
+from ..consumers import MultiIrcConsumer
+from ..multi import MultiConnectionClient
+from .utils import AsyncMock
 
 
-class MultiConnectionClientTests(AsyncTestCase):
+class MultiConnectionClientTests(TestCase):
     def make_fake_client(self):
         client = ChannelsIRCClient(MagicMock)
         client.application_instance = asyncio.Future()
@@ -18,7 +20,7 @@ class MultiConnectionClientTests(AsyncTestCase):
         On creating a new instance of `MultiConnectionClient` it should
         send the `irc.multi.init` message
         """
-        client = MultiConnectionClient(MultiIrcConsumer)
+        client = MultiConnectionClient(MultiIrcConsumer())
 
         response = await client.application_queue.get()
         self.assertEqual(response, {'type': 'irc.multi.init'})
@@ -37,7 +39,7 @@ class MultiConnectionClientTests(AsyncTestCase):
             'nickname': 'my_nick',
         }
 
-        client = MultiConnectionClient(MultiIrcConsumer)
+        client = MultiConnectionClient(MultiIrcConsumer())
 
         self.assertEqual(len(client.connections), 0)
         await client.from_consumer(msg)
@@ -62,7 +64,7 @@ class MultiConnectionClientTests(AsyncTestCase):
             'nickname': 'my_nick',
         }
 
-        client = MultiConnectionClient(MultiIrcConsumer)
+        client = MultiConnectionClient(MultiIrcConsumer())
 
         client.connections = {
             'my.test.server:my_nick': self.make_fake_client(),

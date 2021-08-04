@@ -11,7 +11,7 @@ Full docs available at [django-channels-irc.readthedocs.io](https://django-chann
 
 ## Requirements
 
-- [Django Channels 2+](https://channels.readthedocs.io/en/latest/)
+- [Django Channels 3+](https://channels.readthedocs.io/en/latest/)
 
 ## Installation
 
@@ -58,7 +58,6 @@ pip install channels-irc
             """
             self.send_message('my-channel', 'here is what I wanted to say')
 
-        def my_custom_command(self):
             """
             You can also use built-in functions to send basic IRC commands
             """
@@ -74,7 +73,7 @@ pip install channels-irc
     from myapp.consumers import MyIrcConsumer
 
     application = ProtocolTypeRouter({
-        'irc': MyIrcConsumer,
+        'irc': MyIrcConsumer.as_asgi(),
     })
     ```
 

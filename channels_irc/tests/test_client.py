@@ -1,10 +1,11 @@
+import asyncio
 from unittest.mock import patch, Mock
-from irc.client import NickMask
-from django.test import TestCase
 
-from ..consumers import AsyncIrcConsumer
+from django.test import TestCase
+from irc.client import NickMask
+
 from ..client import ChannelsIRCClient
-from .utils import AsyncTestCase
+from ..consumers import AsyncIrcConsumer
 
 
 class MockEvent(object):
@@ -31,13 +32,14 @@ async def async_magic():
 Mock.__await__ = lambda x: async_magic().__await__()
 
 
-class ChannelsIRCClientTests(AsyncTestCase):
+class ChannelsIRCClientTests(TestCase):
     @patch('irc.client_aio.AioConnection.connect')
     def setUp(self, mock_connect):
         super().setUp()
 
-        self.client = ChannelsIRCClient(AsyncIrcConsumer)
-        self.loop.run_until_complete(self.client.connect('test.irc.server', 6667, 'advogg'))
+        self.client = ChannelsIRCClient(AsyncIrcConsumer())
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.client.connect('test.irc.server', 6667, 'advogg'))
         self.client.connection.send_raw = Mock()
 
         self.mock_connection = MockConnection(server='test.irc.server', port=6667)
