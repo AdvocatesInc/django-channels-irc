@@ -265,4 +265,7 @@ class ChannelsIRCClient(AioSimpleIRCClient, BaseServer):
         """
         Adds missing `#` if necessary
         """
+        if name is None:
+            return name
+
         return name if name[0] == '#' else '#{}'.format(name)
