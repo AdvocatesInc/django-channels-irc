@@ -58,7 +58,7 @@ your ``irc`` messages are delivered to the right place::
     from myapp.consumers import MyIrcConsumer
 
     application = ProtocolTypeRouter({
-        'irc': MyIrcConsumer,
+        'irc': MyIrcConsumer.as_asgi(),
     })
 
 Start the interface server

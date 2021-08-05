@@ -28,12 +28,14 @@ class BaseServer:
         Handles creating the ASGI application and instatiating the
         send Queue
         """
-        application_instance = self.application(scope=scope)
         self.application_queue = asyncio.Queue()
-        self.application_instance = asyncio.ensure_future(application_instance(
+        application_instance = self.application(
+            scope=scope,
             receive=self.application_queue.get,
-            send=from_consumer),
-            loop=self.loop
+            send=from_consumer
+        )
+        self.application_instance = asyncio.ensure_future(
+            application_instance, loop=self.loop,
         )
 
     def futures_checker(self):

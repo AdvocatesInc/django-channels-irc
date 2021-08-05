@@ -18,7 +18,7 @@ Full docs available at `django-channels-irc.readthedocs.io
 Requirements
 ============
 
-- `Django Channels 2+
+- `Django Channels 3+
   <https://channels.readthedocs.io/en/latest/>`_
 
 Usage
@@ -80,7 +80,7 @@ your ``irc`` messages are delivered to the right place::
     from myapp.consumers import MyIrcConsumer
 
     application = ProtocolTypeRouter({
-        'irc': MyIrcConsumer,
+        'irc': MyIrcConsumer.as_asgi(),
     })
 
 Start the interface server

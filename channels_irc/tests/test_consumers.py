@@ -1,20 +1,20 @@
 from unittest.mock import patch
 
 from channels.testing import ApplicationCommunicator
+from django.test import TestCase
 
-from .utils import AsyncTestCase, AsyncMock, async_test
+from .utils import AsyncMock
 from ..consumers import AsyncIrcConsumer
 
 
-class AsyncIrcConsumerTests(AsyncTestCase):
+class AsyncIrcConsumerTests(TestCase):
     @patch('channels_irc.consumers.AsyncIrcConsumer.welcome', new_callable=AsyncMock)
-    @async_test
     async def test_on_welcome(self, mock_welcome):
         """
         `irc.receive` called with a `welcome` command should call the
         `on_welcome`
         """
-        communicator = ApplicationCommunicator(AsyncIrcConsumer, {'type': 'irc'})
+        communicator = ApplicationCommunicator(AsyncIrcConsumer(), {'type': 'irc'})
 
         await communicator.send_input({
             'type': 'irc.receive',
@@ -27,7 +27,6 @@ class AsyncIrcConsumerTests(AsyncTestCase):
         await communicator.wait(timeout=.2)
         self.assertEqual(mock_welcome.call_count, 1)
 
-    @async_test
     async def test_send_command(self):
         """
         `send_command` should format the correct message and return it to the
@@ -37,7 +36,7 @@ class AsyncIrcConsumerTests(AsyncTestCase):
             async def test_command(self, event):
                 await self.send_command('join', channel='my_channel')
 
-        communicator = ApplicationCommunicator(SendCommandConsumer, {'type': 'irc'})
+        communicator = ApplicationCommunicator(SendCommandConsumer(), {'type': 'irc'})
 
         # Give the loop a beat to initialize the instance
         await communicator.send_input({'type': 'test.command'})
@@ -50,7 +49,6 @@ class AsyncIrcConsumerTests(AsyncTestCase):
             'body': None,
         })
 
-    @async_test
     async def test_send_message(self):
         """
         `send_message` should format the correct message and return it to the
@@ -60,7 +58,7 @@ class AsyncIrcConsumerTests(AsyncTestCase):
             async def test_message(self, event):
                 await self.send_message('my_channel', 'Hello IRC!')
 
-        communicator = ApplicationCommunicator(SendMessageConsumer, {'type': 'irc'})
+        communicator = ApplicationCommunicator(SendMessageConsumer(), {'type': 'irc'})
 
         await communicator.send_input({'type': 'test.message'})
 
